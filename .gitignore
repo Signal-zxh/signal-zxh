@@ -1,0 +1,52 @@
+# 编译产物
+signal-zxh
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# 日志
+*.log
+app.log
+nohup.out
+
+# 数据库
+*.db
+*.sqlite
+*.sqlite3
+
+# Docker
+*.pid
+*.pid.lock
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 环境变量
+.env
+.env.local
+
+# Trae/VS Code 远程配置
+.trae-cn-server/
+.vscode-server/
+
+# 临时文件
+/tmp
+*.tmp
+
+# 依赖
+/vendor
+node_modules/
+
+# 备份文件
+*.bak
+*.backup
