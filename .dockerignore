@@ -27,7 +27,7 @@ Thumbs.db
 .env
 .env.local
 
-# Trae 远程服务文件夹（从你之前的进程列表看，里面可能有一大堆 node_modules）
+# Trae 远程服务文件夹
 .trae-cn-server/
 
 # Docker 相关
@@ -35,7 +35,7 @@ Dockerfile
 docker-compose*.yml
 .dockerignore
 
-# 数据库文件（如果你以后改用 MySQL 或者 SQLite）
+# 数据库文件
 *.db
 *.sqlite
 *.sqlite3
