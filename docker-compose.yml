@@ -22,7 +22,7 @@ services:
     memswap_limit: 200m
 
   mysql:
-    image: mysql:8.0
+    image: mysql:9.7
     container_name: mysql
     restart: always
     environment:
