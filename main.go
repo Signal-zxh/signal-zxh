@@ -9,6 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/joho/godotenv"
 )
 
 type Post struct {
@@ -21,12 +22,14 @@ type CreatePostRequest struct {
 }
 
 func main() {
+	godotenv.Load()
 	dsn := os.Getenv("DB_DSN")
 
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer db.Close()
 
 	if err := db.Ping(); err != nil {
 		log.Fatal("db connect failed:", err)
@@ -49,8 +52,27 @@ func main() {
 		{ID: 2, Title: "第二篇文章"},
 	}
 	r.GET("/posts", func(c *gin.Context) {
+		rows, err := db.Query("SELECT id, title FROM posts")
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		defer rows.Close()
+
+		var result []Post
+
+		for rows.Next() {
+			var p Post
+			err := rows.Scan(&p.ID, &p.Title)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+			result = append(result, p)
+		}
+
 		c.JSON(http.StatusOK, gin.H{
-			"posts": posts,
+			"posts": result,
 		})
 	})
 
