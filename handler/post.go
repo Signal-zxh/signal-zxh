@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 
@@ -12,27 +13,14 @@ import (
 type PostHandler struct{}
 
 func (h *PostHandler) GetPosts(c *gin.Context) {
-	rows, err := db.DB.Query("SELECT id, title FROM posts")
+	posts, err := db.GetPosts()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	defer rows.Close()
-
-	var result []model.Post
-
-	for rows.Next() {
-		var p model.Post
-		err := rows.Scan(&p.ID, &p.Title)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-		result = append(result, p)
-	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"posts": result,
+		"posts": posts,
 	})
 }
 
@@ -44,13 +32,11 @@ func (h *PostHandler) CreatePost(c *gin.Context) {
 		return
 	}
 
-	res, err := db.DB.Exec("INSERT INTO posts(title) VALUES(?)", req.Title)
+	id, err := db.CreatePost(req.Title)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-
-	id, _ := res.LastInsertId()
 
 	c.JSON(http.StatusOK, gin.H{
 		"id":    id,
@@ -73,18 +59,15 @@ func (h *PostHandler) UpdatePost(c *gin.Context) {
 		return
 	}
 
-	res, err := db.DB.Exec("UPDATE posts SET title = ? WHERE id = ?", req.Title, id)
+	err = db.UpdatePost(id, req.Title)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	rows, _ := res.RowsAffected()
-
-	if rows == 0 {
-		c.JSON(http.StatusNotFound, gin.H{
-			"error": "post not found",
-		})
+		if errors.Is(err, db.ErrNoRowsAffected) {
+			c.JSON(http.StatusNotFound, gin.H{
+				"error": "post not found",
+			})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
 		return
 	}
 
@@ -99,22 +82,21 @@ func (h *PostHandler) DeletePost(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, "invalid id")
-		return
-	}
-
-	res, err := db.DB.Exec("DELETE FROM posts WHERE id = ?", id)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	rows, _ := res.RowsAffected()
-
-	if rows == 0 {
-		c.JSON(http.StatusNotFound, gin.H{
-			"error": "post not found",
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "invalid id",
 		})
+		return
+	}
+
+	err = db.DeletePost(id)
+	if err != nil {
+		if errors.Is(err, db.ErrNoRowsAffected) {
+			c.JSON(http.StatusNotFound, gin.H{
+				"error": "post not found",
+			})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
 		return
 	}
 
@@ -127,19 +109,23 @@ func (h *PostHandler) GetPostByID(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, "invalid id")
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "invalid id",
+		})
 		return
 	}
 
-	row := db.DB.QueryRow("SELECT id, title FROM posts WHERE id = ?", id)
-
-	var post model.Post
-
-	err = row.Scan(&post.ID, &post.Title)
+	post, err := db.GetPostByID(id)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"error": "post not found",
-		})
+		if errors.Is(err, db.ErrNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{
+				"error": "post not found",
+			})
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": err.Error(),
+			})
+		}
+
 		return
 	}
 
