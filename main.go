@@ -21,6 +21,10 @@ type CreatePostRequest struct {
 	Title string `json:"title"`
 }
 
+type UpdatePostRequest struct {
+	Title string `json:"title"`
+}
+
 func main() {
 	godotenv.Load()
 	dsn := os.Getenv("DB_DSN")
@@ -47,10 +51,6 @@ func main() {
 		c.File("./static/index.html")
 	})
 
-	posts := []Post{
-		{ID: 1, Title: "第一篇文章"},
-		{ID: 2, Title: "第二篇文章"},
-	}
 	r.GET("/posts", func(c *gin.Context) {
 		rows, err := db.Query("SELECT id, title FROM posts")
 		if err != nil {
@@ -78,18 +78,25 @@ func main() {
 
 	r.GET("/posts/:id", func(c *gin.Context) {
 		idStr := c.Param("id")
-		id, _ := strconv.Atoi(idStr)
-
-		for _, post := range posts {
-			if post.ID == id {
-				c.JSON(http.StatusOK, post)
-				return
-			}
+		id, err := strconv.Atoi(idStr)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, "invalid id")
+			return
 		}
 
-		c.JSON(http.StatusNotFound, gin.H{
-			"message": "Post not found",
-		})
+		row := db.QueryRow("SELECT id, title FROM posts WHERE id = ?", id)
+
+		var post Post
+
+		err = row.Scan(&post.ID, &post.Title)
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{
+				"error": "post not found",
+			})
+			return
+		}
+
+		c.JSON(http.StatusOK, post)
 	})
 
 	r.POST("/posts", func(c *gin.Context) {
@@ -97,18 +104,88 @@ func main() {
 
 		if err := c.BindJSON(&req); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
-				"error": "Invalid json",
+				"error": err.Error(),
 			})
 			return
 		}
 
-		newID := len(posts) + 1
-		newPost := Post{
-			ID:    newID,
-			Title: req.Title,
+		res, err := db.Exec("INSERT INTO posts(title) VALUES(?)", req.Title)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
 		}
-		posts = append(posts, newPost)
-		c.JSON(http.StatusOK, newPost)
+
+		id, _ := res.LastInsertId()
+
+		c.JSON(http.StatusOK, gin.H{
+			"id":    id,
+			"title": req.Title,
+		})
+	})
+
+	r.DELETE("/posts/:id", func(c *gin.Context) {
+		idStr := c.Param("id")
+		id, err := strconv.Atoi(idStr)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, "invalid id")
+			return
+		}
+
+		res, err := db.Exec("DELETE FROM posts WHERE id = ?", id)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		rows, _ := res.RowsAffected()
+
+		if rows == 0 {
+			c.JSON(http.StatusNotFound, gin.H{
+				"error": "post not found",
+			})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"message": "deleted successfully",
+		})
+	})
+
+	r.PUT("/posts/:id", func(c *gin.Context) {
+		idStr := c.Param("id")
+		id, err := strconv.Atoi(idStr)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, "invalid id")
+			return
+		}
+
+		var req UpdatePostRequest
+
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		res, err := db.Exec("UPDATE posts SET title = ? WHERE id = ?", req.Title, id)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		rows, _ := res.RowsAffected()
+
+		if rows == 0 {
+			c.JSON(http.StatusNotFound, gin.H{
+				"error": "post not found",
+			})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"message": "updated successfully",
+			"id":      id,
+			"title":   req.Title,
+		})
 	})
 
 	r.Run(":8080") // 监听 8080 端口
