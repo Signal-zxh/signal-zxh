@@ -2,12 +2,10 @@ package main
 
 import (
 	"log"
-	"net/http"
 	"os"
-	"strconv"
 
 	"github.com/Signal-zxh/signal-zxh/db"
-	"github.com/Signal-zxh/signal-zxh/model"
+	"github.com/Signal-zxh/signal-zxh/handler"
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/joho/godotenv"
@@ -39,142 +37,16 @@ func main() {
 		c.File("./static/index.html")
 	})
 
-	r.GET("/posts", func(c *gin.Context) {
-		rows, err := db.DB.Query("SELECT id, title FROM posts")
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-		defer rows.Close()
+	h := &handler.PostHandler{}
+	r.GET("/posts", h.GetPosts)
 
-		var result []model.Post
+	r.GET("/posts/:id", h.GetPostByID)
 
-		for rows.Next() {
-			var p model.Post
-			err := rows.Scan(&p.ID, &p.Title)
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-				return
-			}
-			result = append(result, p)
-		}
+	r.POST("/posts", h.CreatePost)
 
-		c.JSON(http.StatusOK, gin.H{
-			"posts": result,
-		})
-	})
+	r.DELETE("/posts/:id", h.DeletePost)
 
-	r.GET("/posts/:id", func(c *gin.Context) {
-		idStr := c.Param("id")
-		id, err := strconv.Atoi(idStr)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, "invalid id")
-			return
-		}
-
-		row := db.DB.QueryRow("SELECT id, title FROM posts WHERE id = ?", id)
-
-		var post model.Post
-
-		err = row.Scan(&post.ID, &post.Title)
-		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{
-				"error": "post not found",
-			})
-			return
-		}
-
-		c.JSON(http.StatusOK, post)
-	})
-
-	r.POST("/posts", func(c *gin.Context) {
-		var req CreatePostRequest
-
-		if err := c.BindJSON(&req); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"error": err.Error(),
-			})
-			return
-		}
-
-		res, err := db.DB.Exec("INSERT INTO posts(title) VALUES(?)", req.Title)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-
-		id, _ := res.LastInsertId()
-
-		c.JSON(http.StatusOK, gin.H{
-			"id":    id,
-			"title": req.Title,
-		})
-	})
-
-	r.DELETE("/posts/:id", func(c *gin.Context) {
-		idStr := c.Param("id")
-		id, err := strconv.Atoi(idStr)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, "invalid id")
-			return
-		}
-
-		res, err := db.DB.Exec("DELETE FROM posts WHERE id = ?", id)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-
-		rows, _ := res.RowsAffected()
-
-		if rows == 0 {
-			c.JSON(http.StatusNotFound, gin.H{
-				"error": "post not found",
-			})
-			return
-		}
-
-		c.JSON(http.StatusOK, gin.H{
-			"message": "deleted successfully",
-		})
-	})
-
-	r.PUT("/posts/:id", func(c *gin.Context) {
-		idStr := c.Param("id")
-		id, err := strconv.Atoi(idStr)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, "invalid id")
-			return
-		}
-
-		var req UpdatePostRequest
-
-		if err := c.ShouldBindJSON(&req); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			return
-		}
-
-		res, err := db.DB.Exec("UPDATE posts SET title = ? WHERE id = ?", req.Title, id)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-
-		rows, _ := res.RowsAffected()
-
-		if rows == 0 {
-			c.JSON(http.StatusNotFound, gin.H{
-				"error": "post not found",
-			})
-			return
-		}
-
-		c.JSON(http.StatusOK, gin.H{
-			"message": "updated successfully",
-			"id":      id,
-			"title":   req.Title,
-		})
-	})
+	r.PUT("/posts/:id", h.UpdatePost)
 
 	r.Run(":8080") // 监听 8080 端口
 }
