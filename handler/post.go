@@ -3,10 +3,12 @@ package handler
 import (
 	"errors"
 	"net/http"
+	"os"
 	"strconv"
 
 	"github.com/Signal-zxh/signal-zxh/model"
 	"github.com/Signal-zxh/signal-zxh/service"
+	"github.com/Signal-zxh/signal-zxh/utils"
 	"github.com/gin-gonic/gin"
 )
 
@@ -123,4 +125,31 @@ func (h *PostHandler) GetPostByID(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, model.Success(post))
+}
+
+func (h *PostHandler) Login(c *gin.Context) {
+	var req struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, model.Fail("bad request"))
+		return
+	}
+
+	if req.Username != os.Getenv("ADMIN_USERNAME") || req.Password != os.Getenv("ADMIN_PASSWORD") {
+		c.JSON(http.StatusUnauthorized, model.Fail("invalid credentials"))
+		return
+	}
+
+	token, err := utils.GenerateToken(1)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, model.Fail("failed to generate token"))
+		return
+	}
+
+	c.JSON(http.StatusOK, model.Success(gin.H{
+		"token": token,
+	}))
 }

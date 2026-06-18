@@ -48,7 +48,7 @@ go mod download
 go run main.go
 ```
 
-  服务将在 http://47.96.119.143:8080 启动
+  服务将在 http://localhost:8080 启动
 
 ### Docker 部署
 
@@ -73,26 +73,84 @@ docker-compose logs -f signal-zxh
 
 ```
 signal-zxh/
-├── db/              # 数据库初始化和操作
-│   └── mysql.go     # 数据库连接
-│   └── post.go      # 文章数据访问
-├── handler/         # HTTP 处理器
-│   └── post.go      # 文章请求处理
+├── db/              # 数据库层
+│   ├── mysql.go     # 数据库连接初始化
+│   └── post.go      # 文章数据访问层（CRUD）
+├── handler/         # 控制器层
+│   └── post.go      # HTTP 请求处理，参数验证
+├── middleware/      # 中间件层
+│   ├── jwt.go       # JWT 认证中间件
+│   └── logger.go    # 请求日志中间件
 ├── model/           # 数据模型
-│   └── post.go      # 文章结构定义
+│   ├── post.go      # Post 结构定义
+│   └── response.go  # 统一响应格式
+├── router/          # 路由配置
+│   └── router.go    # 路由注册与中间件绑定
 ├── service/         # 业务逻辑层
-│   └── post.go      # 业务逻辑封装
-├── static/          # 静态文件
-│   ├── index.html
-│   └── style.css
+│   └── post.go      # 业务逻辑封装，错误转换
+├── utils/           # 工具函数
+│   └── jwt.go       # JWT 生成与解析
+├── static/          # 静态资源
+│   ├── index.html   # 首页
+│   └── style.css    # 样式文件
 ├── mysql-conf/      # MySQL 配置
-│   └── my.cnf
-├── main.go          # 主程序入口
-├── Dockerfile       # Docker 镜像构建
-└── docker-compose.yml # Docker Compose 配置
+│   └── my.cnf       # MySQL 配置文件
+├── main.go          # 应用入口
+├── Dockerfile       # 多阶段构建配置
+└── docker-compose.yml # 容器编排配置
+```
+
+## 架构设计
+
+采用经典的 **三层架构 + 中间件模式**：
+
+```
+┌─────────────────────────────────────────────┐
+│             Middleware (中间件层)           │
+│  - Logger: 请求日志记录                     │
+│  - Auth: JWT 认证校验                      │
+└────────────────┬────────────────────────────┘
+                 │
+┌────────────────▼────────────────────────────┐
+│           Handler (控制器层)                │
+│  - 处理 HTTP 请求/响应                       │
+│  - 参数验证与错误返回                        │
+└────────────────┬────────────────────────────┘
+                 │
+┌────────────────▼────────────────────────────┐
+│           Service (业务逻辑层)               │
+│  - 封装业务逻辑                             │
+│  - 错误转换 (db.Err → service.Err)          │
+└────────────────┬────────────────────────────┘
+                 │
+┌────────────────▼────────────────────────────┐
+│              DB (数据访问层)                 │
+│  - SQL 查询执行                             │
+│  - 数据库连接管理                           │
+└─────────────────────────────────────────────┘
 ```
 
 ## API 文档
+
+### 响应格式
+
+**成功响应：**
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": { ... }
+}
+```
+
+**失败响应：**
+```json
+{
+  "code": 1,
+  "message": "error message",
+  "data": null
+}
+```
 
 ### 获取所有文章
 ```http
