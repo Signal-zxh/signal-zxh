@@ -89,6 +89,17 @@
             margin-bottom: 12px;
             font-size: 1.25rem;
         }
+        .card a {
+            color: #60a5fa;
+            text-decoration: none;
+            border-bottom: 1px solid transparent;
+            transition: all 0.2s ease;
+        }
+        .card a:hover {
+            color: #93c5fd;
+            border-bottom-color: #3b82f6;
+            font-size: 1.25rem;
+        }
         .card p {
             color: #9aa4b2;
             line-height: 1.6;
@@ -117,27 +128,27 @@
 </div>
 
 <div class="container">
-    <div class="card">
-        <h3>👤 关于我</h3>
-        <p>这里是关于页面的占位内容。您可以在这里介绍自己，例如：</p>
-        <ul>
-            <li>个人简介</li>
-            <li>技术栈</li>
-            <li>工作经历</li>
-            <li>联系方式</li>
-            <li>GitHub 链接</li>
-        </ul>
-    </div>
 
     <div class="card">
         <h3>📝 网站介绍</h3>
-        <p>这是一个使用 Go + Gin + MySQL 构建的个人博客网站。</p>
+        <p>这是一个使用 Go + Gin + MySQL 构建的个人网站。</p>
         <p style="margin-top:8px;">技术栈：</p>
         <ul>
             <li>后端：Go + Gin</li>
             <li>数据库：MySQL</li>
             <li>前端：HTML + CSS + JavaScript</li>
             <li>部署：Docker</li>
+        </ul>
+    </div>
+        <div class="card">
+        <h3>👤 关于我</h3>
+        <p>这里是一个前行者</p>
+        <ul>
+            <!-- <li>个人简介</li> -->
+            <li>技术栈： c嵌入式+cpp/python量化+go后端</li>
+            <!-- <li>工作经历</li> -->
+            <li>联系方式：<a href="mailto:zhao_xinhao@foxmail.com">zhao_xinhao@foxmail.com</a></li>
+            <li>GitHub 链接：<a href="https://github.com/Signal-zxh">Signal-zxh</a></li>
         </ul>
     </div>
 </div>

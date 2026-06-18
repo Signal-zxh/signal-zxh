@@ -93,16 +93,124 @@
             color: #9aa4b2;
             line-height: 1.6;
         }
-        .card ul {
+        
+        /* 番茄钟样式 */
+        .pomodoro {
+            text-align: center;
+            padding: 20px 0;
+        }
+        .mode-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+        .mode-btn {
+            padding: 8px 16px;
+            border: 1px solid #23272b;
+            background: transparent;
             color: #9aa4b2;
-            margin-top: 12px;
-            padding-left: 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+        .mode-btn:hover {
+            border-color: #3b82f6;
+            color: #fff;
+        }
+        .mode-btn.active {
+            background: #3b82f6;
+            border-color: #3b82f6;
+            color: #fff;
+        }
+        .timer-display {
+            font-size: 5rem;
+            font-weight: 700;
+            font-family: "JetBrains Mono", "Fira Code", monospace;
+            color: #fff;
+            margin: 20px 0;
+            letter-spacing: 4px;
+        }
+        .timer-buttons {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+        .timer-btn {
+            padding: 12px 32px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .btn-start {
+            background: #3b82f6;
+            color: #fff;
+        }
+        .btn-start:hover {
+            background: #2563eb;
+        }
+        .btn-reset {
+            background: #23272b;
+            color: #9aa4b2;
+        }
+        .btn-reset:hover {
+            background: #2d3339;
+            color: #fff;
+        }
+        .pomodoro-stats {
+            display: flex;
+            gap: 40px;
+            justify-content: center;
+            padding: 20px 0;
+            border-top: 1px solid #23272b;
+            margin-top: 20px;
+        }
+        .stat-item {
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #3b82f6;
+        }
+        .stat-label {
+            color: #9aa4b2;
+            font-size: 14px;
+            margin-top: 4px;
+        }
+        .notification {
+            position: fixed;
+            top: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #3b82f6;
+            color: #fff;
+            padding: 16px 32px;
+            border-radius: 12px;
+            font-size: 18px;
+            z-index: 3000;
+            display: none;
+            animation: slideDown 0.3s ease;
+        }
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
         }
     </style>
 </head>
 <body>
 <div class="header">
-    <span class="logo">✦ Signal </span>
+    <span class="logo">✦ Signal ZXH</span>
     
     <div class="nav">
         <a href="/">首页</a>
@@ -117,23 +225,50 @@
 </div>
 
 <div class="container">
+    <!-- 番茄钟 -->
     <div class="card">
-        <h3>🛠️ 工具页面</h3>
-        <p>这里是工具页面的占位内容。您可以在这里添加各种实用工具，例如：</p>
+        <h3>🍅 番茄钟</h3>
+        <div class="pomodoro">
+            <div class="mode-buttons">
+                <button class="mode-btn active" onclick="setMode('work')">专注工作</button>
+                <button class="mode-btn" onclick="setMode('short')">短休息</button>
+                <button class="mode-btn" onclick="setMode('long')">长休息</button>
+            </div>
+            
+            <div id="timerDisplay" class="timer-display">25:00</div>
+            
+            <div class="timer-buttons">
+                <button id="startBtn" class="timer-btn btn-start" onclick="toggleTimer()">开始</button>
+                <button class="timer-btn btn-reset" onclick="resetTimer()">重置</button>
+            </div>
+            
+            <div class="pomodoro-stats">
+                <div class="stat-item">
+                    <div id="completedPomodoros" class="stat-value">0</div>
+                    <div class="stat-label">完成番茄数</div>
+                </div>
+                <div class="stat-item">
+                    <div id="totalMinutes" class="stat-value">0</div>
+                    <div class="stat-label">累计分钟</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>🛠️ 更多工具</h3>
+        <p>更多实用工具正在开发中...敬请期待！</p>
         <ul>
             <li>在线代码编辑器</li>
             <li>Markdown 转换器</li>
             <li>时间戳工具</li>
             <li>JSON 格式化工具</li>
-            <li>图片压缩工具</li>
         </ul>
     </div>
-
-    <div class="card">
-        <h3>🔧 开发中</h3>
-        <p>更多工具功能正在开发中...敬请期待！</p>
-    </div>
 </div>
+
+<!-- 完成通知 -->
+<div id="notification" class="notification">🎉 时间到！休息一下吧！</div>
 
 <!-- 登录模态框 -->
 <div id="loginModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.75); justify-content:center; align-items:center; z-index:2000;">
@@ -154,6 +289,197 @@
 </div>
 
 <script>
+// 番茄钟状态
+let timerInterval = null;
+let timeLeft = 25 * 60; // 剩余秒数
+let isRunning = false;
+let currentMode = 'work'; // work, short, long
+let completedPomodoros = parseInt(localStorage.getItem('completedPomodoros')) || 0;
+let totalMinutes = parseInt(localStorage.getItem('totalMinutes')) || 0;
+let isAlerting = false;  // 是否正在提醒状态
+let alertInterval = null; // 闪烁定时器
+let originalTitle = '工具 - Signal ZXH'; // 原始标题
+
+// 初始化显示
+document.getElementById('completedPomodoros').textContent = completedPomodoros;
+document.getElementById('totalMinutes').textContent = totalMinutes;
+updateDisplay();
+
+// 模式配置
+const modes = {
+    work: 25,
+    short: 5,
+    long: 15
+};
+
+function setMode(mode) {
+    if (isRunning) {
+        stopTimer();
+    }
+    currentMode = mode;
+    
+    // 更新按钮样式
+    document.querySelectorAll('.mode-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.target.classList.add('active');
+    
+    // 设置时间
+    timeLeft = modes[mode] * 60;
+    updateDisplay();
+}
+
+function updateDisplay() {
+    const minutes = Math.floor(timeLeft / 60);
+    const seconds = timeLeft % 60;
+    const timeStr = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    document.getElementById('timerDisplay').textContent = timeStr;
+    
+    // 更新页面标题显示倒计时
+    if (isRunning) {
+        document.title = `⏱ ${timeStr} - 番茄钟`;
+    } else {
+        document.title = originalTitle;
+    }
+}
+
+function toggleTimer() {
+    if (isRunning) {
+        stopTimer();
+    } else {
+        startTimer();
+    }
+}
+
+function startTimer() {
+    isRunning = true;
+    document.getElementById('startBtn').textContent = '暂停';
+    
+    timerInterval = setInterval(() => {
+        timeLeft--;
+        updateDisplay();
+        
+        if (timeLeft <= 0) {
+            onTimerComplete();
+        }
+    }, 1000);
+}
+
+function stopTimer() {
+    isRunning = false;
+    document.getElementById('startBtn').textContent = '开始';
+    
+    if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+    }
+}
+
+function resetTimer() {
+    stopTimer();
+    timeLeft = modes[currentMode] * 60;
+    updateDisplay();
+}
+
+function onTimerComplete() {
+    stopTimer();
+    isAlerting = true;
+    
+    let alertMessage = '';
+    let alertTitle = '';
+    
+    // 统计
+    if (currentMode === 'work') {
+        completedPomodoros++;
+        totalMinutes += modes.work;
+        localStorage.setItem('completedPomodoros', completedPomodoros);
+        localStorage.setItem('totalMinutes', totalMinutes);
+        document.getElementById('completedPomodoros').textContent = completedPomodoros;
+        document.getElementById('totalMinutes').textContent = totalMinutes;
+        
+        alertMessage = '🎉 专注完成！休息一下吧！';
+        alertTitle = '🎉 专注完成！';
+    } else {
+        alertMessage = '☕ 休息结束！继续加油！';
+        alertTitle = '☕ 休息结束！';
+    }
+    
+    // 显示通知
+    showNotification(alertMessage);
+    
+    // 开始持续闪烁提醒
+    startAlerting(alertTitle);
+}
+
+function startAlerting(message) {
+    // 持续播放提示音
+    const soundInterval = setInterval(() => {
+        if (!isAlerting) {
+            clearInterval(soundInterval);
+            return;
+        }
+        playNotificationSound();
+    }, 2000); // 每2秒播放一次
+    
+    // 标题闪烁
+    let showMessage = true;
+    alertInterval = setInterval(() => {
+        if (showMessage) {
+            document.title = message;
+        } else {
+            document.title = '⏰ 时间到！';
+        }
+        showMessage = !showMessage;
+    }, 500); // 每0.5秒切换一次
+    
+    // 通知持续显示
+    const notification = document.getElementById('notification');
+    notification.style.display = 'block';
+}
+
+function stopAlerting() {
+    isAlerting = false;
+    if (alertInterval) {
+        clearInterval(alertInterval);
+        alertInterval = null;
+    }
+    document.title = originalTitle;
+    document.getElementById('notification').style.display = 'none';
+}
+
+function showNotification(message) {
+    const notification = document.getElementById('notification');
+    notification.textContent = message;
+    notification.style.display = 'block';
+    
+    setTimeout(() => {
+        notification.style.display = 'none';
+    }, 3000);
+}
+
+function playNotificationSound() {
+    // 使用 Web Audio API 播放简单的提示音
+    try {
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        oscillator.frequency.value = 800;
+        oscillator.type = 'sine';
+        
+        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+        
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.5);
+    } catch (e) {
+        console.log('提示音播放失败:', e);
+    }
+}
+
 function showLoginModal() {
     document.getElementById("loginModal").style.display = "flex"
 }
@@ -217,6 +543,28 @@ async function login() {
         resultDiv.innerHTML = "❌ 请求失败"
     }
 }
+
+// 点击任意位置停止提醒
+document.addEventListener('click', function() {
+    if (isAlerting) {
+        stopAlerting();
+        
+        // 自动切换到下一个模式
+        if (currentMode === 'work') {
+            // 每4个番茄钟后长休息
+            if (completedPomodoros % 4 === 0) {
+                setMode('long');
+                document.querySelectorAll('.mode-btn')[2].classList.add('active');
+            } else {
+                setMode('short');
+                document.querySelectorAll('.mode-btn')[1].classList.add('active');
+            }
+        } else {
+            setMode('work');
+            document.querySelectorAll('.mode-btn')[0].classList.add('active');
+        }
+    }
+});
 </script>
 </body>
 </html>
