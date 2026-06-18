@@ -25,7 +25,10 @@ func (h *PostHandler) GetPosts(c *gin.Context) {
 }
 
 func (h *PostHandler) CreatePost(c *gin.Context) {
-	var req model.Post
+	var req struct {
+		Title   string `json:"title"`
+		Content string `json:"content"`
+	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, model.Fail(err.Error()))
@@ -40,7 +43,7 @@ func (h *PostHandler) CreatePost(c *gin.Context) {
 
 	uid := userID.(int)
 
-	id, err := service.CreatePost(req.Title, uid)
+	id, err := service.CreatePost(req.Title, req.Content, uid)
 	if err != nil {
 		if errors.Is(err, service.ErrInvalidInput) {
 			c.JSON(http.StatusBadRequest, model.Fail("invalid input"))
@@ -51,8 +54,9 @@ func (h *PostHandler) CreatePost(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, model.Success(gin.H{
-		"id":    id,
-		"title": req.Title,
+		"id":      id,
+		"title":   req.Title,
+		"content": req.Content,
 	}))
 }
 
@@ -64,14 +68,17 @@ func (h *PostHandler) UpdatePost(c *gin.Context) {
 		return
 	}
 
-	var req model.Post
+	var req struct {
+		Title   string `json:"title"`
+		Content string `json:"content"`
+	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, model.Fail(err.Error()))
 		return
 	}
 
-	err = service.UpdatePost(id, req.Title)
+	err = service.UpdatePost(id, req.Title, req.Content)
 	if err != nil {
 		if errors.Is(err, service.ErrNotFound) {
 			c.JSON(http.StatusNotFound, model.Fail("post not found"))

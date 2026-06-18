@@ -27,18 +27,30 @@ func GetPosts() ([]model.Post, error) {
 	return db.GetPosts()
 }
 
-func CreatePost(title string, userID int) (int64, error) {
+func CreatePost(title, content string, userID int) (int64, error) {
 	if title == "" || len(title) > 100 {
 		return 0, ErrInvalidInput
 	}
-	return db.CreatePost(title)
+
+	post := model.Post{
+		Title:   title,
+		Content: content,
+		UserID:  userID,
+	}
+
+	return db.CreatePost(post)
 }
 
-func UpdatePost(id int, title string) error {
+func UpdatePost(id int, title, content string) error {
 	if title == "" || len(title) > 100 {
 		return ErrInvalidInput
 	}
-	err := db.UpdatePost(id, title)
+	post := model.Post{
+		ID: 	 id,
+		Title:   title,
+		Content: content,
+	}
+	err := db.UpdatePost(post)
 	if err != nil {
 		if errors.Is(err, db.ErrNoRowsAffected) {
 			return ErrNotFound

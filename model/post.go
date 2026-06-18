@@ -1,6 +1,8 @@
 package model
 
 type Post struct {
-	ID    int    `json:"id"`
-	Title string `json:"title"`
+	ID      int    `json:"id"`
+	Title   string `json:"title"`
+	Content string `json:"content"`
+	UserID  int    `json:"user_id"`
 }

@@ -11,7 +11,7 @@ var ErrNoRowsAffected = errors.New("no rows affected")
 var ErrNotFound = errors.New("not found")
 
 func GetPosts() ([]model.Post, error) {
-	rows, err := DB.Query("SELECT id, title FROM posts")
+	rows, err := DB.Query("SELECT id, title, content, user_id FROM posts")
 	if err != nil {
 		return nil, err
 	}
@@ -22,7 +22,7 @@ func GetPosts() ([]model.Post, error) {
 	for rows.Next() {
 		var post model.Post
 
-		if err := rows.Scan(&post.ID, &post.Title); err != nil {
+		if err := rows.Scan(&post.ID, &post.Title, &post.Content, &post.UserID); err != nil {
 			return nil, err
 		}
 
@@ -35,10 +35,10 @@ func GetPosts() ([]model.Post, error) {
 	return posts, nil
 }
 
-func CreatePost(title string) (int64, error) {
+func CreatePost(post model.Post) (int64, error) {
 	res, err := DB.Exec(
-		"INSERT INTO posts(title) VALUES(?)",
-		title,
+		"INSERT INTO posts(title, content, user_id) VALUES(?, ?,?)",
+		post.Title, post.Content, post.UserID,
 	)
 	if err != nil {
 		return 0, err
@@ -47,8 +47,8 @@ func CreatePost(title string) (int64, error) {
 	return res.LastInsertId()
 }
 
-func UpdatePost(id int, title string) error {
-	res, err := DB.Exec("UPDATE posts SET title = ? WHERE id = ?", title, id)
+func UpdatePost(post model.Post) error {
+	res, err := DB.Exec("UPDATE posts SET title = ?, content = ? WHERE id = ?", post.Title, post.Content, post.ID)
 	if err != nil {
 		return err
 	}
@@ -84,11 +84,11 @@ func DeletePost(id int) error {
 }
 
 func GetPostByID(id int) (model.Post, error) {
-	row := DB.QueryRow("SELECT id, title FROM posts WHERE id = ?", id)
+	row := DB.QueryRow("SELECT id, title, content, user_id FROM posts WHERE id = ?", id)
 
 	var post model.Post
 
-	err := row.Scan(&post.ID, &post.Title)
+	err := row.Scan(&post.ID, &post.Title, &post.Content, &post.UserID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return model.Post{}, ErrNotFound
