@@ -1,7 +1,11 @@
 package service
 
 import (
+	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"time"
 
 	"github.com/Signal-zxh/signal-zxh/db"
 	"github.com/Signal-zxh/signal-zxh/model"
@@ -13,6 +17,16 @@ var (
 )
 
 func GetPostByID(id int) (model.Post, error) {
+	// 从redis中查询帖子
+	key := fmt.Sprintf("post:%d", id)
+	val, err := db.RDB.Get(context.Background(), key).Result()
+	if err == nil {
+		fmt.Println("hit redis")
+		var post model.Post
+		_ = json.Unmarshal([]byte(val), &post)
+		return post, nil
+	}
+	// 从数据库中查询帖子
 	post, err := db.GetPostByID(id)
 	if err != nil {
 		if errors.Is(err, db.ErrNotFound) {
@@ -20,6 +34,15 @@ func GetPostByID(id int) (model.Post, error) {
 		}
 		return model.Post{}, err
 	}
+	// 回写redis缓存
+	b, _ := json.Marshal(post)
+	db.RDB.Set(
+		context.Background(),
+		key,
+		b,
+		10*time.Minute,
+	)
+
 	return post, nil
 }
 
@@ -46,7 +69,7 @@ func UpdatePost(id int, title, content string) error {
 		return ErrInvalidInput
 	}
 	post := model.Post{
-		ID: 	 id,
+		ID:      id,
 		Title:   title,
 		Content: content,
 	}
@@ -57,6 +80,8 @@ func UpdatePost(id int, title, content string) error {
 		}
 		return err
 	}
+	// 删除redis缓存，确保下次查询获取最新数据
+	db.RDB.Del(context.Background(), fmt.Sprintf("post:%d", id))
 	return nil
 }
 
@@ -68,5 +93,7 @@ func DeletePost(id int) error {
 		}
 		return err
 	}
+	// 删除redis缓存，确保下次查询获取最新数据
+	db.RDB.Del(context.Background(), fmt.Sprintf("post:%d", id))
 	return nil
 }
