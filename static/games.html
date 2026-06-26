@@ -98,11 +98,26 @@
             margin-top: 12px;
             padding-left: 20px;
         }
+
+        @media (max-width: 768px) {
+            body { padding-top: 120px; }
+            .header { padding: 12px 16px; flex-wrap: wrap; align-items: center; }
+            .logo { font-size: 1.1rem; order: 1; }
+            .nav { 
+                order: 3; gap: 8px; margin: 8px auto 0; width: 100%; 
+                justify-content: center; margin-left: 0; margin-right: 0;
+            }
+            .nav a { font-size: 0.8rem; padding: 4px 8px; }
+            .header-right { order: 2; }
+            .admin-link { font-size: 0.75rem; padding: 4px 10px; }
+            .container { padding: 0 16px; }
+            .card { padding: 16px; }
+        }
     </style>
 </head>
 <body>
 <div class="header">
-    <span class="logo">✦ Signal </span>
+    <span class="logo" onclick="window.location.href='/'">✦ Signal ZXH</span>
     
     <div class="nav">
         <a href="/">首页</a>
