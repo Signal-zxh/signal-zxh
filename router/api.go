@@ -24,4 +24,5 @@ func RegisterAPI(r *gin.Engine) {
 
 	api := r.Group("/api/tools")
 	api.POST("/http", t.HttpProbe)
+	api.POST("/agent", t.Agent)
 }

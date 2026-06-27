@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/Signal-zxh/signal-zxh/agent"
 	"github.com/Signal-zxh/signal-zxh/model"
 	"github.com/Signal-zxh/signal-zxh/service"
 	"github.com/Signal-zxh/signal-zxh/utils"
@@ -198,5 +199,19 @@ func (t *ToolHandler) HttpProbe(c *gin.Context) {
 	c.JSON(http.StatusOK, model.Success(gin.H{
 		"status":  resp.StatusCode,
 		"time_ms": cost.Milliseconds(),
+	}))
+}
+
+func (t *ToolHandler) Agent(c *gin.Context) {
+	var req struct {
+		Query string `json:"query"`
+	}
+
+	c.BindJSON(&req)
+
+	result := agent.RouteTool(req.Query)
+
+	c.JSON(http.StatusOK, model.Success(gin.H{
+		"result": result,
 	}))
 }
