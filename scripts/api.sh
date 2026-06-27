@@ -10,7 +10,7 @@ echo "===================="
 
 RESP=$(curl -s $BASE/login \
   -H "Content-Type: application/json" \
-  -d '{"username":"admin","password":"123"}')
+  -d '{"username":"admin","password":"123456"}')
 
 TOKEN=$(echo $RESP | sed -n 's/.*"token":"\([^"]*\)".*/\1/p')
 
