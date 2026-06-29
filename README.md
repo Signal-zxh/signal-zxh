@@ -4,9 +4,15 @@
 
 **在线演示**: [http://47.96.119.143/](http://47.96.119.143/)
 
+![CI](https://github.com/Signal-zxh/signal-zxh/actions/workflows/ci.yml/badge.svg)
+![Go Version](https://img.shields.io/github/go-mod/go-version/Signal-zxh/signal-zxh)
+![License](https://img.shields.io/github/license/Signal-zxh/signal-zxh)
+![Code Size](https://img.shields.io/github/languages/code-size/Signal-zxh/signal-zxh)
+
 ## 功能特性
 
 - 📝 文章 CRUD 操作（创建、读取、更新、删除）
+- 📄 文章分页查询（支持 Redis 分页缓存）
 - 🔐 JWT 认证机制（登录/鉴权）
 - 🗄️ MySQL 数据持久化
 - ⚡ Redis 缓存支持（文章详情缓存，10分钟过期）
@@ -15,6 +21,8 @@
 - 📱 移动端响应式设计
 - 🐳 Docker 容器化部署
 - 🚀 RESTful API 设计
+- ✅ 完整单元测试（Service层 + Handler层 + Cache层）
+- 🔄 GitHub Actions CI/CD 集成
 
 ## 技术栈
 
@@ -81,12 +89,13 @@ docker-compose logs -f signal-zxh
 
 ```
 signal-zxh/
-├── db/              # 数据库层
+├── db/              # 数据库层（接口抽象 + 实现）
 │   ├── mysql.go     # MySQL 连接初始化
 │   ├── redis.go     # Redis 连接初始化
-│   └── post.go      # 文章数据访问层（CRUD）
+│   └── post.go      # PostRepo 接口实现（CRUD）
 ├── handler/         # 控制器层
-│   └── post.go      # HTTP 请求处理，参数验证
+│   ├── post.go      # HTTP 请求处理，参数验证
+│   └── post_test.go # Handler 层单元测试（HTTP）
 ├── middleware/      # 中间件层
 │   ├── jwt.go       # JWT 认证中间件
 │   └── logger.go    # 请求日志中间件
@@ -98,10 +107,12 @@ signal-zxh/
 │   ├── api.go       # 公开 API 路由
 │   ├── auth.go      # 需认证 API 路由
 │   └── page.go      # 静态页面路由
-├── service/         # 业务逻辑层
-│   ├── post.go      # 文章业务逻辑封装
-│   └── cache/       # 缓存层
-│       └── post.go  # Redis 缓存操作封装
+├── service/         # 业务逻辑层（接口抽象 + 实现）
+│   ├── post.go      # PostService 接口定义与实现
+│   ├── post_test.go # Service 层单元测试（Spy Mock）
+│   └── cache/       # 缓存层（接口抽象 + 实现）
+│       ├── post.go  # PostCache 接口定义与实现
+│       └── post_test.go # Cache 层单元测试
 ├── utils/           # 工具函数
 │   └── jwt.go       # JWT 生成与解析
 ├── static/          # 静态资源
@@ -115,6 +126,9 @@ signal-zxh/
 │   └── my.cnf       # MySQL 配置文件
 ├── scripts/         # 脚本
 │   └── api.sh       # API 测试脚本
+├── .github/workflows/  # GitHub Actions
+│   ├── ci.yml       # CI 工作流（测试、构建、代码质量）
+│   └── docker.yml   # Docker 镜像构建工作流
 ├── main.go          # 应用入口
 ├── Makefile         # 构建脚本
 ├── Dockerfile       # 多阶段构建配置
@@ -123,7 +137,7 @@ signal-zxh/
 
 ## 架构设计
 
-采用经典的 **三层架构 + 中间件 + 缓存模式**：
+采用经典的 **三层架构 + 中间件 + 缓存模式**，通过接口抽象实现依赖注入，便于单元测试和模块替换：
 
 ```
 ┌─────────────────────────────────────────────┐
@@ -136,16 +150,20 @@ signal-zxh/
 │           Handler (控制器层)                │
 │  - 处理 HTTP 请求/响应                       │
 │  - 参数验证与错误返回                        │
+│  - 依赖注入 PostService 接口                 │
 └────────────────┬────────────────────────────┘
                  │
 ┌────────────────▼────────────────────────────┐
 │           Service (业务逻辑层)               │
+│  - PostService 接口定义                     │
 │  - 封装业务逻辑                             │
 │  - 错误转换 (db.Err → service.Err)          │
+│  - 依赖注入 PostRepo + PostCache 接口        │
 └────────────────┬────────────────────────────┘
                  │
 ┌────────────────▼────────────────────────────┐
 │        Service/Cache (缓存层)               │
+│  - PostCache 接口定义                       │
 │  - Redis 缓存策略                           │
 │  - Cache-Aside Pattern                      │
 │  - Cache Invalidation                       │
@@ -154,17 +172,91 @@ signal-zxh/
        ▼                           ▼
 ┌──────────────┐         ┌──────────────────────┐
 │ Redis (缓存) │         │    DB (数据访问层)    │
-│  - 读取缓存  │         │  - SQL 查询执行       │
-│  - 写入缓存  │         │  - 数据库连接管理     │
-│  - 删除缓存  │         │                      │
+│  - 读取缓存  │         │  - PostRepo 接口实现  │
+│  - 写入缓存  │         │  - SQL 查询执行       │
+│  - 删除缓存  │         │  - 数据库连接管理     │
 └──────────────┘         └──────────────────────┘
 ```
+
+### 接口抽象设计
+
+| 接口 | 定义位置 | 职责 |
+|------|---------|------|
+| `PostService` | `service/post.go` | 业务逻辑层接口，定义文章操作方法 |
+| `PostRepo` | `db/post.go` | 数据访问层接口，定义数据库操作 |
+| `PostCache` | `service/cache/post.go` | 缓存层接口，定义 Redis 操作 |
+
+这种设计使得：
+- **可测试性**: 测试时可以传入 Mock 实现
+- **松耦合**: 各层依赖接口而非具体实现
+- **可扩展性**: 可轻松替换数据库或缓存实现
 
 ### 缓存策略
 
 - **Cache-Aside Pattern**: 先查缓存，未命中再查数据库
 - **TTL**: 10分钟过期时间
 - **Cache Invalidation**: 创建/更新/删除文章时主动删除缓存，保证数据一致性
+- **分页缓存**: 按 `posts:list:page:{page}:size:{size}` 格式缓存分页数据
+
+## 单元测试
+
+### 测试覆盖
+
+| 层级 | 文件 | 测试用例数 | 测试类型 |
+|------|------|-----------|---------|
+| Service | `service/post_test.go` | 12 | Spy Mock |
+| Handler | `handler/post_test.go` | 5 | HTTP 测试 |
+| Cache | `service/cache/post_test.go` | 7 | 集成测试 |
+| 合计 | - | 24 | - |
+
+### 测试运行
+
+```bash
+# 运行所有测试
+go test ./... -v
+
+# 运行指定包测试
+go test -v ./service/...
+
+# 运行测试并生成覆盖率报告
+go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
+
+# 查看覆盖率报告
+go tool cover -html=coverage.out
+```
+
+### 测试模式
+
+**Spy Mock 模式**: Service 层测试使用 Spy 模式追踪依赖调用：
+
+```go
+type spyPostRepo struct {
+    getPostByIDCalled bool
+    getPostByIDReturn model.Post
+    // ...
+}
+```
+
+这种模式验证：
+- 方法是否被调用
+- 参数是否正确传递
+- 返回值是否符合预期
+
+**HTTP 测试**: Handler 层测试使用 `httptest` 模拟 HTTP 请求：
+
+```go
+req := httptest.NewRequest("GET", "/posts?page=1&page_size=10", nil)
+w := httptest.NewRecorder()
+r.ServeHTTP(w, req)
+```
+
+### CI/CD 集成
+
+GitHub Actions 自动执行：
+- ✅ 多版本 Go 测试（1.23、1.24）
+- ✅ MySQL + Redis 服务集成测试
+- ✅ 代码质量检查（gofmt、go vet）
+- ✅ 测试覆盖率报告生成
 
 ## API 文档
 
