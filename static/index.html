@@ -259,7 +259,7 @@ async function loadPosts() {
     const container = document.getElementById("posts")
 
     try {
-        const res = await fetch("/posts")
+        const res = await fetch("/posts", { cache: "no-cache" })
 
         const text = await res.text()
         let json

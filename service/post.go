@@ -1,17 +1,13 @@
 package service
 
 import (
-	"context"
-	"encoding/json"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/Signal-zxh/signal-zxh/db"
 	"github.com/Signal-zxh/signal-zxh/model"
+	"github.com/Signal-zxh/signal-zxh/service/cache"
 )
-
-const RedisNil = "__nil__"
 
 var (
 	ErrNotFound     = errors.New("not found")
@@ -19,73 +15,39 @@ var (
 )
 
 func GetPostByID(id int) (model.Post, error) {
-	// 从redis中查询帖子
-	key := fmt.Sprintf("post:%d", id)
-	val, err := db.RDB.Get(context.Background(), key).Result()
-	if err == nil {
-		fmt.Println("hit redis")
-		// 缓存中为__nil__，返回Redis nil,防止穿透
-		if val == RedisNil {
+	post, found, err := cache.GetPostByID(id)
+	if err == nil && found {
+		if post.ID == 0 {
 			return model.Post{}, ErrNotFound
 		}
-
-		var post model.Post
-		_ = json.Unmarshal([]byte(val), &post)
 		return post, nil
 	}
-	// 从数据库中查询帖子
-	post, err := db.GetPostByID(id)
+
+	post, err = db.GetPostByID(id)
 	if err != nil {
 		if errors.Is(err, db.ErrNotFound) {
-			// 写入空置缓存，防止穿透
-			db.RDB.Set(
-				context.Background(),
-				key,
-				RedisNil,
-				1*time.Minute,
-			)
-
+			cache.SetNilPost(id, 1*time.Minute)
 			return model.Post{}, ErrNotFound
 		}
 		return model.Post{}, err
 	}
-	// 回写redis缓存
-	b, _ := json.Marshal(post)
-	db.RDB.Set(
-		context.Background(),
-		key,
-		b,
-		10*time.Minute,
-	)
 
+	cache.SetPost(post, 10*time.Minute)
 	return post, nil
 }
 
 func GetPosts() ([]model.Post, error) {
-	// 从redis中查询帖子列表
-	key := "posts:list"
-	val, err := db.RDB.Get(context.Background(), key).Result()
-	if err == nil {
-		fmt.Println("hit redis")
-
-		var posts []model.Post
-		_ = json.Unmarshal([]byte(val), &posts)
+	posts, found, err := cache.GetPosts()
+	if err == nil && found {
 		return posts, nil
 	}
-	// 从数据库中查询帖子列表
-	posts, err := db.GetPosts()
+
+	posts, err = db.GetPosts()
 	if err != nil {
 		return nil, err
 	}
-	// 回写redis缓存
-	b, _ := json.Marshal(posts)
-	db.RDB.Set(
-		context.Background(),
-		key,
-		b,
-		10*time.Minute,
-	)
-	// 回写redis缓存，确保下次查询获取最新数据/
+
+	cache.SetPosts(posts, 10*time.Minute)
 	return posts, nil
 }
 
@@ -100,18 +62,26 @@ func CreatePost(title, content string, userID int) (int64, error) {
 		UserID:  userID,
 	}
 
-	return db.CreatePost(post)
+	id, err := db.CreatePost(post)
+	if err != nil {
+		return 0, err
+	}
+
+	cache.InvalidatePosts()
+	return id, nil
 }
 
 func UpdatePost(id int, title, content string) error {
 	if title == "" || len(title) > 100 {
 		return ErrInvalidInput
 	}
+
 	post := model.Post{
 		ID:      id,
 		Title:   title,
 		Content: content,
 	}
+
 	err := db.UpdatePost(post)
 	if err != nil {
 		if errors.Is(err, db.ErrNoRowsAffected) {
@@ -119,8 +89,8 @@ func UpdatePost(id int, title, content string) error {
 		}
 		return err
 	}
-	// 删除redis缓存，确保下次查询获取最新数据
-	db.RDB.Del(context.Background(), fmt.Sprintf("post:%d", id))
+
+	cache.InvalidatePost(id)
 	return nil
 }
 
@@ -132,7 +102,7 @@ func DeletePost(id int) error {
 		}
 		return err
 	}
-	// 删除redis缓存，确保下次查询获取最新数据
-	db.RDB.Del(context.Background(), fmt.Sprintf("post:%d", id))
+
+	cache.InvalidatePost(id)
 	return nil
 }

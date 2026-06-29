@@ -318,7 +318,8 @@ async function loadPosts() {
 
     try {
         const res = await fetch('/posts', {
-            headers: { 'Authorization': 'Bearer ' + token }
+            headers: { 'Authorization': 'Bearer ' + token },
+            cache: 'no-cache'
         })
 
         const text = await res.text()
