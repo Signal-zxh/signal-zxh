@@ -15,10 +15,10 @@ import (
 )
 
 type PostHandler struct {
-	postService *service.PostService
+	postService service.PostService
 }
 
-func NewPostHandler(postService *service.PostService) *PostHandler {
+func NewPostHandler(postService service.PostService) *PostHandler {
 	return &PostHandler{postService: postService}
 }
 

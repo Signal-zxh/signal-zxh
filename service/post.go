@@ -14,16 +14,25 @@ var (
 	ErrInvalidInput = errors.New("invalid input")
 )
 
-type PostService struct {
+type PostService interface {
+	GetPostByID(id int) (model.Post, error)
+	GetPosts() ([]model.Post, error)
+	GetPostsByPage(page, pageSize int) ([]model.Post, int, error)
+	CreatePost(title, content string, userID int) (int64, error)
+	UpdatePost(id int, title, content string) error
+	DeletePost(id int) error
+}
+
+type postService struct {
 	repo  db.PostRepo
 	cache cache.PostCache
 }
 
-func NewPostService(repo db.PostRepo, c cache.PostCache) *PostService {
-	return &PostService{repo: repo, cache: c}
+func NewPostService(repo db.PostRepo, c cache.PostCache) PostService {
+	return &postService{repo: repo, cache: c}
 }
 
-func (s *PostService) GetPostByID(id int) (model.Post, error) {
+func (s *postService) GetPostByID(id int) (model.Post, error) {
 	post, found, err := s.cache.GetPostByID(id)
 	if err == nil && found {
 		if post.ID == 0 {
@@ -45,7 +54,7 @@ func (s *PostService) GetPostByID(id int) (model.Post, error) {
 	return post, nil
 }
 
-func (s *PostService) GetPosts() ([]model.Post, error) {
+func (s *postService) GetPosts() ([]model.Post, error) {
 	posts, found, err := s.cache.GetPosts()
 	if err == nil && found {
 		return posts, nil
@@ -60,7 +69,7 @@ func (s *PostService) GetPosts() ([]model.Post, error) {
 	return posts, nil
 }
 
-func (s *PostService) GetPostsByPage(page, pageSize int) ([]model.Post, int, error) {
+func (s *postService) GetPostsByPage(page, pageSize int) ([]model.Post, int, error) {
 	if page < 1 {
 		page = 1
 	}
@@ -91,7 +100,7 @@ func (s *PostService) GetPostsByPage(page, pageSize int) ([]model.Post, int, err
 	return posts, count, nil
 }
 
-func (s *PostService) CreatePost(title, content string, userID int) (int64, error) {
+func (s *postService) CreatePost(title, content string, userID int) (int64, error) {
 	if title == "" || len(title) > 100 {
 		return 0, ErrInvalidInput
 	}
@@ -111,7 +120,7 @@ func (s *PostService) CreatePost(title, content string, userID int) (int64, erro
 	return id, nil
 }
 
-func (s *PostService) UpdatePost(id int, title, content string) error {
+func (s *postService) UpdatePost(id int, title, content string) error {
 	if title == "" || len(title) > 100 {
 		return ErrInvalidInput
 	}
@@ -134,7 +143,7 @@ func (s *PostService) UpdatePost(id int, title, content string) error {
 	return nil
 }
 
-func (s *PostService) DeletePost(id int) error {
+func (s *postService) DeletePost(id int) error {
 	err := s.repo.DeletePost(id)
 	if err != nil {
 		if errors.Is(err, db.ErrNoRowsAffected) {
@@ -144,5 +153,6 @@ func (s *PostService) DeletePost(id int) error {
 	}
 
 	s.cache.InvalidatePost(id)
+	s.cache.InvalidatePosts()
 	return nil
 }
