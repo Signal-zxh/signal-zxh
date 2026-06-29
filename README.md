@@ -82,8 +82,8 @@ docker-compose logs -f signal-zxh
 ```
 signal-zxh/
 ├── db/              # 数据库层
-│   ├── mysql.go     # 数据库连接初始化
-│   ├── redis.go     # Redis连接初始化
+│   ├── mysql.go     # MySQL 连接初始化
+│   ├── redis.go     # Redis 连接初始化
 │   └── post.go      # 文章数据访问层（CRUD）
 ├── handler/         # 控制器层
 │   └── post.go      # HTTP 请求处理，参数验证
@@ -94,9 +94,14 @@ signal-zxh/
 │   ├── post.go      # Post 结构定义
 │   └── response.go  # 统一响应格式
 ├── router/          # 路由配置
-│   └── router.go    # 路由注册与中间件绑定
+│   ├── router.go    # 路由注册入口
+│   ├── api.go       # 公开 API 路由
+│   ├── auth.go      # 需认证 API 路由
+│   └── page.go      # 静态页面路由
 ├── service/         # 业务逻辑层
-│   └── post.go      # 业务逻辑封装，Redis缓存，错误转换
+│   ├── post.go      # 文章业务逻辑封装
+│   └── cache/       # 缓存层
+│       └── post.go  # Redis 缓存操作封装
 ├── utils/           # 工具函数
 │   └── jwt.go       # JWT 生成与解析
 ├── static/          # 静态资源
@@ -108,7 +113,10 @@ signal-zxh/
 │   └── about.html          # 关于页
 ├── mysql-conf/      # MySQL 配置
 │   └── my.cnf       # MySQL 配置文件
+├── scripts/         # 脚本
+│   └── api.sh       # API 测试脚本
 ├── main.go          # 应用入口
+├── Makefile         # 构建脚本
 ├── Dockerfile       # 多阶段构建配置
 └── docker-compose.yml # 容器编排配置
 ```
@@ -133,8 +141,14 @@ signal-zxh/
 ┌────────────────▼────────────────────────────┐
 │           Service (业务逻辑层)               │
 │  - 封装业务逻辑                             │
-│  - Redis 缓存策略                           │
 │  - 错误转换 (db.Err → service.Err)          │
+└────────────────┬────────────────────────────┘
+                 │
+┌────────────────▼────────────────────────────┐
+│        Service/Cache (缓存层)               │
+│  - Redis 缓存策略                           │
+│  - Cache-Aside Pattern                      │
+│  - Cache Invalidation                       │
 └──────┬───────────────────────────┬──────────┘
        │                           │
        ▼                           ▼
@@ -150,7 +164,7 @@ signal-zxh/
 
 - **Cache-Aside Pattern**: 先查缓存，未命中再查数据库
 - **TTL**: 10分钟过期时间
-- **Cache Invalidation**: 更新/删除时主动删除缓存，保证一致性
+- **Cache Invalidation**: 创建/更新/删除文章时主动删除缓存，保证数据一致性
 
 ## API 文档
 
@@ -308,9 +322,39 @@ MySQL 配置文件位于 `mysql-conf/my.cnf`，包含：
 
 ### 添加新功能
 
-1. 在 `model/` 中定义数据模型
-2. 在 `handler/` 中实现业务逻辑
-3. 在 `main.go` 中注册路由
+遵循分层架构，按以下顺序开发：
+
+1. **Model**: 在 `model/` 中定义数据结构
+2. **DB**: 在 `db/` 中实现数据访问层（SQL 查询）
+3. **Cache**: 在 `service/cache/` 中实现缓存逻辑（如需缓存）
+4. **Service**: 在 `service/` 中封装业务逻辑
+5. **Handler**: 在 `handler/` 中处理 HTTP 请求/响应
+6. **Router**: 在 `router/` 中注册路由
+
+### Makefile 命令
+
+```bash
+# 开发模式运行（后台）
+make dev
+
+# 停止服务
+make stop
+
+# 重启服务
+make restart
+
+# API 测试
+make test
+
+# 性能测试
+make wrk
+
+# 连接 Redis
+make redis
+
+# 连接 MySQL
+make mysql
+```
 
 ### 数据库迁移
 
