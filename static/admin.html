@@ -323,6 +323,7 @@ async function loadPosts() {
         })
 
         const text = await res.text()
+        console.log('API Response:', text)
         let json
         try {
             json = JSON.parse(text)
@@ -336,7 +337,8 @@ async function loadPosts() {
             return
         }
 
-        const posts = json.data || []
+        const posts = json.data.data || []
+        console.log('Posts found:', posts.length)
 
         if (posts.length === 0) {
             container.innerHTML = '<p style="color:#9aa4b2; text-align:center;">暂无文章</p>'
