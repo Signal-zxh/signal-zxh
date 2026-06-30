@@ -1,9 +1,9 @@
 services:
-  signal-zxh:
+  signalzxh-blog:
     build:
       context: .
       target: final
-    container_name: signal-zxh
+    container_name: signalzxh-blog
     restart: always
     ports:
       - "8080:8080"

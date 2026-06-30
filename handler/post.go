@@ -7,10 +7,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/Signal-zxh/signal-zxh/agent"
-	"github.com/Signal-zxh/signal-zxh/model"
-	"github.com/Signal-zxh/signal-zxh/service"
-	"github.com/Signal-zxh/signal-zxh/utils"
+	"github.com/Signal-zxh/signalzxh-blog/agent"
+	"github.com/Signal-zxh/signalzxh-blog/model"
+	"github.com/Signal-zxh/signalzxh-blog/service"
+	"github.com/Signal-zxh/signalzxh-blog/utils"
 	"github.com/gin-gonic/gin"
 )
 

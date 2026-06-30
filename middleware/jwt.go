@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/Signal-zxh/signal-zxh/model"
-	"github.com/Signal-zxh/signal-zxh/utils"
+	"github.com/Signal-zxh/signalzxh-blog/model"
+	"github.com/Signal-zxh/signalzxh-blog/utils"
 	"github.com/gin-gonic/gin"
 )
 

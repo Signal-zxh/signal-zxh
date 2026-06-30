@@ -28,7 +28,7 @@ jobs:
       uses: docker/metadata-action@v5
       with:
         images: |
-          signalzxh/signal-blog
+          signalzxh/signalzxh-blog
         tags: |
           type=ref,event=branch
           type=semver,pattern={{version}}

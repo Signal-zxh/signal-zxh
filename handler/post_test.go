@@ -9,9 +9,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Signal-zxh/signal-zxh/handler"
-	"github.com/Signal-zxh/signal-zxh/model"
-	"github.com/Signal-zxh/signal-zxh/router"
+	"github.com/Signal-zxh/signalzxh-blog/handler"
+	"github.com/Signal-zxh/signalzxh-blog/model"
+	"github.com/Signal-zxh/signalzxh-blog/router"
 )
 
 type mockPostService struct{}

@@ -1,4 +1,4 @@
-module github.com/Signal-zxh/signal-zxh
+module github.com/Signal-zxh/signalzxh-blog
 
 go 1.24.0
 

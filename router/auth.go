@@ -1,8 +1,8 @@
 package router
 
 import (
-	"github.com/Signal-zxh/signal-zxh/handler"
-	"github.com/Signal-zxh/signal-zxh/middleware"
+	"github.com/Signal-zxh/signalzxh-blog/handler"
+	"github.com/Signal-zxh/signalzxh-blog/middleware"
 	"github.com/gin-gonic/gin"
 )
 

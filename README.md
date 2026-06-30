@@ -4,11 +4,11 @@
 
 **在线演示**: [http://47.96.119.143/](http://47.96.119.143/)
 
-![CI](https://github.com/Signal-zxh/signal-zxh/actions/workflows/ci.yml/badge.svg)
-![Docker](https://github.com/Signal-zxh/signal-zxh/actions/workflows/docker.yml/badge.svg)
-![Go Version](https://img.shields.io/github/go-mod/go-version/Signal-zxh/signal-zxh)
-![License](https://img.shields.io/github/license/Signal-zxh/signal-zxh)
-![Code Size](https://img.shields.io/github/languages/code-size/Signal-zxh/signal-zxh)
+![CI](https://github.com/Signal-zxh/signalzxh-blog/actions/workflows/ci.yml/badge.svg)
+![Docker](https://github.com/Signal-zxh/signalzxh-blog/actions/workflows/docker.yml/badge.svg)
+![Go Version](https://img.shields.io/github/go-mod/go-version/Signal-zxh/signalzxh-blog)
+![License](https://img.shields.io/github/license/Signal-zxh/signalzxh-blog)
+![Code Size](https://img.shields.io/github/languages/code-size/Signal-zxh/signalzxh-blog)
 
 ## 功能特性
 
@@ -47,7 +47,7 @@
 
 1. 克隆项目
 ```bash
-git clone https://github.com/Signal-zxh/signal-zxh.git
+git clone https://github.com/Signal-zxh/signalzxh-blog.git
 cd signal-zxh
 ```
 

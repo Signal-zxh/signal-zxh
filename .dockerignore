@@ -3,7 +3,7 @@
 .gitignore
 
 # 编译产物
-signal-zxh
+signalzxh-blog
 *.exe
 *.so
 *.dylib

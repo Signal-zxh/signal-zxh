@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Signal-zxh/signal-zxh/db"
-	"github.com/Signal-zxh/signal-zxh/model"
+	"github.com/Signal-zxh/signalzxh-blog/db"
+	"github.com/Signal-zxh/signalzxh-blog/model"
 	"github.com/redis/go-redis/v9"
 )
 

@@ -5,11 +5,11 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 
-	"github.com/Signal-zxh/signal-zxh/db"
-	"github.com/Signal-zxh/signal-zxh/handler"
-	"github.com/Signal-zxh/signal-zxh/router"
-	"github.com/Signal-zxh/signal-zxh/service"
-	"github.com/Signal-zxh/signal-zxh/service/cache"
+	"github.com/Signal-zxh/signalzxh-blog/db"
+	"github.com/Signal-zxh/signalzxh-blog/handler"
+	"github.com/Signal-zxh/signalzxh-blog/router"
+	"github.com/Signal-zxh/signalzxh-blog/service"
+	"github.com/Signal-zxh/signalzxh-blog/service/cache"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/joho/godotenv"
 )

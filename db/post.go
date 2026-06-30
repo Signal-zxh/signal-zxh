@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"errors"
 
-	"github.com/Signal-zxh/signal-zxh/model"
+	"github.com/Signal-zxh/signalzxh-blog/model"
 )
 
 var ErrNoRowsAffected = errors.New("no rows affected")
