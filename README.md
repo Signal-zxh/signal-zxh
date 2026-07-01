@@ -280,7 +280,7 @@ r.ServeHTTP(w, req)
 ### CI 工作流
 
 GitHub Actions 自动执行（每次 push/PR）：
-- ✅ 多版本 Go 测试（1.23、1.24）
+- ✅ Go 1.24 测试
 - ✅ MySQL + Redis 服务集成测试
 - ✅ 代码质量检查（gofmt、go vet、golangci-lint）
 - ✅ 测试覆盖率报告生成（上传至 Codecov）
